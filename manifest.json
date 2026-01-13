@@ -1,0 +1,15 @@
+{
+  "name": "Bombon Player Pro",
+  "short_name": "BombonPro",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#f8ad9d",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3844/3844724.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

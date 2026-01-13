@@ -1,0 +1,94 @@
+<DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bombon Music Player Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#f8ad9d">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #0f172a; color: white; min-height: 100vh; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
+        .active-song { background: linear-gradient(90deg, rgba(248,173,157,0.2) 0%, transparent 100%); border-left: 4px solid #f8ad9d; }
+        input[type="range"] { accent-color: #f8ad9d; cursor: pointer; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-10">
+            <h1 class="text-3xl font-black text-[#f8ad9d]">BOMBON MUSIC</h1>
+            <label class="bg-white text-black px-6 py-2 rounded-full font-bold cursor-pointer hover:bg-[#f8ad9d] transition">
+                SELECCIONAR CARPETA
+                <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
+            </label>
+        /div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div class="lg:col-span-4">
+                <div class="glass p-8 rounded-3xl text-center sticky top-8 shadow-2xl">
+                    <div class="w-48 h-48 bg-slate-800 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-xl">
+                        <i class="fas fa-compact-disc text-7xl text-slate-700 animate-spin-slow"></i>
+                    </div>
+                    <h2 id="currentTitle" class="text-xl font-bold truncate">Sin musica</h2>
+                    <p id="currentArtist" class="text-slate-400 text-sm mb-6">Sube tus archivos</p>
+                    <audio id="audioPlayer" class="hidden"></audio>
+                    <input type="range" id="progressBar" value="0" class="w-full mb-4">
+                    <div class="flex justify-center items-center gap-6">
+                        <button onclick="prevSong()"><i class="fas fa-step-backward text-2xl"></i></button>
+                        <button onclick="togglePlay()" id="playBtn" class="bg-white text-black w-14 h-14 rounded-full flex items-center justify-center"><i class="fas fa-play"></i></button>
+                        <button onclick="nextSong()"><i class="fas fa-step-forward text-2xl"></i></button>
+                    </div>
+                /div>
+            </div>
+            <div class="lg:col-span-8">
+                <div class="glass rounded-3xl overflow-hidden">
+                    <div id="playlist" class="max-h-[500px] overflow-y-auto">
+                        <p class="p-10 text-center text-slate-500">Carga una carpeta con MP3 para empezar.</p>
+                    /div>
+                /div>
+            </div>
+        /div>
+    /div>
+    <script>
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
+        const folderInput = document.getElementById('folderInput');
+        const playlist = document.getElementById('playlist');
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        let songs = []; let currentIndex = 0;
+        folderInput.addEventListener('change', (e) => {
+            songs = Array.from(e.target.files).filter(f => f.type.startsWith('audio/'));
+            if (songs.length > 0) { renderPlaylist(); loadSong(0); }
+        });
+        function renderPlaylist() {
+            playlist.innerHTML = '';
+            songs.forEach((s, i) => {
+                const div = document.createElement('div');
+                div.className = `p-4 cursor-pointer hover:bg-white/5 border-b border-white/5 song-item-${i}`;
+                div.innerHTML = `<p class="text-sm truncate">${s.name}</p>`;
+                div.onclick = () => loadSong(i);
+                playlist.appendChild(div);
+            });
+        }
+        function loadSong(i) {
+            currentIndex = i;
+            audio.src = URL.createObjectURL(songs[i]);
+            document.getElementById('currentTitle').innerText = songs[i].name;
+            document.querySelectorAll('#playlist div').forEach(el => el.classList.remove('active-song'));
+            document.querySelector(`.song-item-${i}`).classList.add('active-song');
+            play();
+        }
+        function togglePlay() { audio.paused ? play() : pause(); }
+        function play() { audio.play(); playBtn.innerHTML = '<i class="fas fa-pause"></i>'; }
+        function pause() { audio.pause(); playBtn.innerHTML = '<i class="fas fa-play"></i>'; }
+        function nextSong() { loadSong((currentIndex + 1) % songs.length); }
+        function prevSong() { loadSong((currentIndex - 1 + songs.length) % songs.length); }
+        audio.addEventListener('timeupdate', () => {
+            document.getElementById('progressBar').value = (audio.currentTime / audio.duration) * 100 || 0;
+            if (audio.ended) nextSong();
+        });
+        document.getElementById('progressBar').addEventListener('input', (e) => audio.currentTime = (e.target.value * audio.duration) / 100);
+    </script>
+</body>
+</html>
