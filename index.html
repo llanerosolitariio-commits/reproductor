@@ -1,94 +1,177 @@
-<DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bombon Music Player Pro</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#f8ad9d">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bombon Music Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        body { background: #0f172a; color: white; min-height: 100vh; overflow-x: hidden; }
-        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.05); }
-        .active-song { background: linear-gradient(90deg, rgba(248,173,157,0.2) 0%, transparent 100%); border-left: 4px solid #f8ad9d; }
-        input[type="range"] { accent-color: #f8ad9d; cursor: pointer; }
+        body { background: #0f172a; color: white; height: 100vh; overflow: hidden; font-family: sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(15px); }
+        .active-song { background: linear-gradient(90deg, rgba(248,173,157,0.15) 0%, transparent 100%); border-left: 4px solid #f8ad9d; color: #f8ad9d; }
+        input[type="range"] { accent-color: #f8ad9d; height: 4px; }
+        
+        /* Animación Disco */
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinning { animation: spin 5s linear infinite; }
+        
+        /* Pestañas Móviles */
+        .tab-content { display: none; height: calc(100vh - 180px); overflow-y: auto; }
+        .active-tab { display: block; }
     </style>
 </head>
-<body class="p-4 md:p-8">
-    <div class="max-w-5xl mx-auto">
-        <div class="flex justify-between items-center mb-10">
-            <h1 class="text-3xl font-black text-[#f8ad9d]">BOMBON MUSIC</h1>
-            <label class="bg-white text-black px-6 py-2 rounded-full font-bold cursor-pointer hover:bg-[#f8ad9d] transition">
-                SELECCIONAR CARPETA
-                <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
-            </label>
-        /div>
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div class="lg:col-span-4">
-                <div class="glass p-8 rounded-3xl text-center sticky top-8 shadow-2xl">
-                    <div class="w-48 h-48 bg-slate-800 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-xl">
-                        <i class="fas fa-compact-disc text-7xl text-slate-700 animate-spin-slow"></i>
-                    </div>
-                    <h2 id="currentTitle" class="text-xl font-bold truncate">Sin musica</h2>
-                    <p id="currentArtist" class="text-slate-400 text-sm mb-6">Sube tus archivos</p>
-                    <audio id="audioPlayer" class="hidden"></audio>
-                    <input type="range" id="progressBar" value="0" class="w-full mb-4">
-                    <div class="flex justify-center items-center gap-6">
-                        <button onclick="prevSong()"><i class="fas fa-step-backward text-2xl"></i></button>
-                        <button onclick="togglePlay()" id="playBtn" class="bg-white text-black w-14 h-14 rounded-full flex items-center justify-center"><i class="fas fa-play"></i></button>
-                        <button onclick="nextSong()"><i class="fas fa-step-forward text-2xl"></i></button>
-                    </div>
-                /div>
+<body class="flex flex-col">
+
+    <header class="p-5 flex justify-between items-center bg-[#0f172a] z-10">
+        <h1 class="text-xl font-black text-[#f8ad9d] tracking-tighter">BOMBON MUSIC</h1>
+        <label class="bg-[#f8ad9d] text-slate-900 p-2 rounded-lg text-xs font-bold cursor-pointer">
+            <i class="fas fa-folder-open mr-1"></i> CARGAR
+            <input type="file" id="folderInput" webkitdirectory directory multiple class="hidden">
+        </label>
+    </header>
+
+    <main class="flex-1 px-5">
+        
+        <div id="playerTab" class="tab-content active-tab flex flex-col items-center justify-center">
+            <div id="discContainer" class="w-64 h-64 bg-slate-800 rounded-full mb-8 flex items-center justify-center shadow-[0_0_50px_rgba(0,0,0,0.5)] border-8 border-slate-900 relative">
+                <i class="fas fa-compact-disc text-8xl text-slate-700"></i>
+                <div class="absolute w-12 h-12 bg-slate-900 rounded-full border-4 border-slate-800"></div>
             </div>
-            <div class="lg:col-span-8">
-                <div class="glass rounded-3xl overflow-hidden">
-                    <div id="playlist" class="max-h-[500px] overflow-y-auto">
-                        <p class="p-10 text-center text-slate-500">Carga una carpeta con MP3 para empezar.</p>
-                    /div>
-                /div>
+            
+            <div class="text-center w-full mb-6">
+                <h2 id="currentTitle" class="text-2xl font-bold truncate px-4">Sin música</h2>
+                <p id="currentArtist" class="text-[#f8ad9d] opacity-80 mt-1">Selecciona una carpeta</p>
             </div>
-        /div>
-    /div>
+        </div>
+
+        <div id="listTab" class="tab-content">
+            <div id="playlist" class="space-y-1 pb-20">
+                <div class="text-center mt-20 opacity-30">
+                    <i class="fas fa-music text-5xl mb-4"></i>
+                    <p>No hay canciones cargadas</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="glass border-t border-white/10 p-5 pb-8 rounded-t-[30px]">
+        <audio id="audioPlayer" class="hidden"></audio>
+        
+        <div class="flex items-center gap-3 mb-4">
+            <span id="currentTime" class="text-[10px] text-slate-400">0:00</span>
+            <input type="range" id="progressBar" value="0" class="flex-1">
+            <span id="totalTime" class="text-[10px] text-slate-400">0:00</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <button onclick="switchTab('listTab')" class="text-slate-400 text-xl"><i class="fas fa-list-ul"></i></button>
+            
+            <div class="flex items-center gap-8">
+                <button onclick="prevSong()" class="text-2xl active:scale-90 transition"><i class="fas fa-backward-step"></i></button>
+                <button onclick="togglePlay()" id="playBtn" class="bg-white text-black w-16 h-16 rounded-full flex items-center justify-center text-2xl shadow-lg active:scale-95 transition">
+                    <i class="fas fa-play ml-1"></i>
+                </button>
+                <button onclick="nextSong()" class="text-2xl active:scale-90 transition"><i class="fas fa-forward-step"></i></button>
+            </div>
+
+            <button onclick="switchTab('playerTab')" class="text-[#f8ad9d] text-xl"><i class="fas fa-compact-disc"></i></button>
+        </div>
+    </footer>
+
     <script>
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
         const folderInput = document.getElementById('folderInput');
         const playlist = document.getElementById('playlist');
         const audio = document.getElementById('audioPlayer');
         const playBtn = document.getElementById('playBtn');
-        let songs = []; let currentIndex = 0;
+        const progressBar = document.getElementById('progressBar');
+        const disc = document.getElementById('discContainer');
+        
+        let songs = []; 
+        let currentIndex = 0;
+
+        // Navegación de pestañas
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active-tab'));
+            document.getElementById(tabId).classList.add('active-tab');
+        }
+
         folderInput.addEventListener('change', (e) => {
             songs = Array.from(e.target.files).filter(f => f.type.startsWith('audio/'));
-            if (songs.length > 0) { renderPlaylist(); loadSong(0); }
+            if (songs.length > 0) { 
+                renderPlaylist(); 
+                loadSong(0); 
+                switchTab('playerTab');
+            }
         });
+
         function renderPlaylist() {
             playlist.innerHTML = '';
             songs.forEach((s, i) => {
                 const div = document.createElement('div');
-                div.className = `p-4 cursor-pointer hover:bg-white/5 border-b border-white/5 song-item-${i}`;
-                div.innerHTML = `<p class="text-sm truncate">${s.name}</p>`;
-                div.onclick = () => loadSong(i);
+                div.className = `p-4 rounded-xl flex items-center gap-4 cursor-pointer transition song-item-${i}`;
+                div.innerHTML = `
+                    <div class="w-10 h-10 bg-slate-800 rounded flex items-center justify-center text-xs text-slate-500">${i+1}</div>
+                    <div class="flex-1 truncate">
+                        <p class="font-medium truncate">${s.name.replace('.mp3', '')}</p>
+                        <p class="text-[10px] opacity-50 uppercase tracking-widest">Audio File</p>
+                    </div>
+                `;
+                div.onclick = () => { loadSong(i); switchTab('playerTab'); };
                 playlist.appendChild(div);
             });
         }
+
         function loadSong(i) {
             currentIndex = i;
             audio.src = URL.createObjectURL(songs[i]);
-            document.getElementById('currentTitle').innerText = songs[i].name;
-            document.querySelectorAll('#playlist div').forEach(el => el.classList.remove('active-song'));
-            document.querySelector(`.song-item-${i}`).classList.add('active-song');
+            document.getElementById('currentTitle').innerText = songs[i].name.replace('.mp3', '');
+            
+            document.querySelectorAll('#playlist > div').forEach(el => el.classList.remove('active-song'));
+            const activeItem = document.querySelector(`.song-item-${i}`);
+            if(activeItem) activeItem.classList.add('active-song');
+            
             play();
         }
+
         function togglePlay() { audio.paused ? play() : pause(); }
-        function play() { audio.play(); playBtn.innerHTML = '<i class="fas fa-pause"></i>'; }
-        function pause() { audio.pause(); playBtn.innerHTML = '<i class="fas fa-play"></i>'; }
+
+        function play() { 
+            audio.play(); 
+            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+            disc.classList.add('spinning');
+        }
+
+        function pause() { 
+            audio.pause(); 
+            playBtn.innerHTML = '<i class="fas fa-play ml-1"></i>';
+            disc.classList.remove('spinning');
+        }
+
         function nextSong() { loadSong((currentIndex + 1) % songs.length); }
         function prevSong() { loadSong((currentIndex - 1 + songs.length) % songs.length); }
+
+        // Formatear tiempo
+        function formatTime(sec) {
+            const min = Math.floor(sec / 60);
+            const s = Math.floor(sec % 60);
+            return `${min}:${s < 10 ? '0' + s : s}`;
+        }
+
         audio.addEventListener('timeupdate', () => {
-            document.getElementById('progressBar').value = (audio.currentTime / audio.duration) * 100 || 0;
+            const perc = (audio.currentTime / audio.duration) * 100 || 0;
+            progressBar.value = perc;
+            document.getElementById('currentTime').innerText = formatTime(audio.currentTime);
+            document.getElementById('totalTime').innerText = isNaN(audio.duration) ? "0:00" : formatTime(audio.duration);
+            
             if (audio.ended) nextSong();
         });
-        document.getElementById('progressBar').addEventListener('input', (e) => audio.currentTime = (e.target.value * audio.duration) / 100);
+
+        progressBar.addEventListener('input', (e) => {
+            audio.currentTime = (e.target.value * audio.duration) / 100;
+        });
+
     </script>
 </body>
 </html>
